@@ -133,9 +133,14 @@ Agent::Action MyAI::getAction(int number)
             int square_num =  *boardObj->getSquare(nextCoord.x, nextCoord.y);
 
             // process actions
-            if (covered_neighbors + flagged_neighbors == square_num) {
-                update_neighbors(nextCoord, COVERED, FLAGGED);
-                add_neighbors(nextCoord, NUMBERED, toProcessList);
+            if (covered_neighbors == 0) {
+                continue; // next loop as no action can be done
+            }
+            else if (covered_neighbors + flagged_neighbors == square_num) {
+                list<Coord> updated_coords = update_neighbors(nextCoord, COVERED, FLAGGED);
+                for (Coord& c : updated_coords) {
+                    add_neighbors(c, NUMBERED, toProcessList);
+                }
             }
             else if (flagged_neighbors == square_num) {
                 add_neighbors(nextCoord, COVERED, toUncoverList);
