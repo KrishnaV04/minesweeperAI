@@ -49,10 +49,11 @@ public:
     // functions in BoardRep
     BoardRep(int _rowDimension, int _colDimension, int _totalMines);
     ~BoardRep();
-    bool updateSquare(int row, int col, int value);
+    bool updateSquare(int row, int col, Square value);
     Square* getSquare(int row, int col);
     bool isDone();
     bool withinBounds(int row, int col);
+    void flagSquared(int row, int col);
 
 };
 

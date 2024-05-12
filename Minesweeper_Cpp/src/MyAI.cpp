@@ -51,13 +51,13 @@ bool BoardRep::withinBounds(int row, int col)
 }
 
 // Marks the square at (row, col) as uncovered and stores its value. Returns false if square out of bounds
-bool BoardRep::updateSquare(int row, int col, int value)
+bool BoardRep::updateSquare(int row, int col, Square value)
 {
     if (!withinBounds(row, col)) {
         return false;
     }
 
-    if (board[row][col] < 0)
+    if (board[row][col] < 0 && value > 0)// means we are uncovering
     {
         covered_squares -= 1;
     }
@@ -153,10 +153,10 @@ Agent::Action MyAI::getAction(int number)
 }
 
 
-void MyAI::add_neighbors(Coord& coord, Square type, list<Coord>& list)
+void MyAI::add_neighbors(Coord& coord, Square label, list<Coord>& list)
 {   
     // very ugly :(
-    if(type == NUMBERED) {
+    if(label == NUMBERED) {
         for(int i = coord.x-1; i <= coord.x+1; ++i) {
             for(int j = coord.y-1; j <= coord.y+1; --j) {
                 if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) >= 0) {
@@ -164,14 +164,72 @@ void MyAI::add_neighbors(Coord& coord, Square type, list<Coord>& list)
                 }
             }
         }
-
     } else {
         for(int i = coord.x-1; i <= coord.x+1; ++i) {
             for(int j = coord.y-1; j <= coord.y+1; --j) {
-                if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == type) {
+                if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == label) {
                     list.push_back(Coord(i, j));
                 }
             }
         }
     }
 }
+
+
+int MyAI::count_neighbors(Coord& coord, Square label) 
+{
+    int sum = 0;
+    for (int i = coord.x-1; i <= coord.x+1; ++i) {
+        for(int j = coord.y-1; j <= coord.y+1; --j) 
+        {
+            if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == label) {
+                ++sum;
+            }
+        }
+    }
+    return sum;
+}
+
+list<Coord> MyAI::update_neighbors(Coord& coord, Square oldtype, Square newtype)
+{
+    list<Coord> updated;
+    for (int i = coord.x-1; i <= coord.x+1; ++i) {
+        for(int j = coord.y-1; j <= coord.y+1; --j) 
+        {
+            if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == oldtype) {
+                boardObj->updateSquare(i, j, newtype);
+                updated.push_back(Coord(i, j));
+            }
+        }
+    }
+    return updated;
+}
+
+
+/*
+int MyAI::count_neighbors(Coord& coord, Square label)
+{
+    int sum = 0;
+    for(int i = coord.x-1; i <= coord.x+1; ++i) {
+        for(int j = coord.y-1; j <= coord.y+1; --j) {
+            if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == label) {
+                ++sum;
+            }
+        }
+    }
+    return sum;
+}
+
+list<Coord> MyAI::update_neighbors(Coord& coord, Square oldLabel, Square newLabel) {
+    list<Coord> updated;
+    for(int i = coord.x-1; i <= coord.x+1; ++i) {
+        for(int j = coord.y-1; j <= coord.y+1; --j) {
+            if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == oldLabel) {
+                boardObj->updateSquare(i, j, newLabel);
+                updated.push_back(Coord(i, j));
+            }
+        }
+    }
+    return updated;
+}
+*/
