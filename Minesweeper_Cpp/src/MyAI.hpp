@@ -30,6 +30,7 @@
 
 #define COVERED -1
 #define FLAGGED -2
+#define NUMBERED -3
 typedef int Square;
 
 using namespace std;
@@ -72,7 +73,8 @@ public:
 
     // Adds neighbors of coordinates provided which have a certain type, to the provided list.
     void add_neighbors(Coord& coord, Square type, list<Coord>& list);
-    int count_neighbors(Coord& coord, Square type, list<Coord>& list);
+    int count_neighbors(Coord& coord, Square type);
+    void update_neighbors(Coord& coord, Square oldtype, Square newtype);
 
     list<Coord> toUncoverList;
     list<Coord> toProcessList;
