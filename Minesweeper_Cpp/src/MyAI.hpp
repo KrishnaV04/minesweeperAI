@@ -27,25 +27,45 @@
 #include <set>
 #include <algorithm>
 
+#define COVERED -1
+#define FLAGGED -2
+typedef int Square;
+
 using namespace std;
 
+// BoardRepresentation Class
+class BoardRep 
+{
+public:
+    // variables of BoardRep
+    const int rowSize;
+    const int colSize;
+    const int totalMines;
+    int covered_squares;
+    Square** board;
+
+    // functions in BoardRep
+    BoardRep(int _rowDimension, int _colDimension, int _totalMines);
+    ~BoardRep();
+    bool updateSquare(int row, int col, int value);
+    Square* getSquare(int row, int col);
+    bool isDone();
+
+private:
+    bool withinBounds(int row, int col);
+};
+
+// AI Class
 class MyAI : public Agent
 {
 public:
     MyAI ( int _rowDimension, int _colDimension, int _totalMines, int _agentX, int _agentY );
-
     Action getAction ( int number ) override;
 
+    BoardRep* board;
+    int agentX;
+    int agentY;
 
-    // ======================================================================
-    // YOUR CODE BEGINS
-    // ======================================================================
-
-
-
-    // ======================================================================
-    // YOUR CODE ENDS
-    // ======================================================================
 };
 
 #endif //MINE_SWEEPER_CPP_SHELL_MYAI_HPP

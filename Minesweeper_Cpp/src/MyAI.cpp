@@ -19,45 +19,32 @@
 
 #include "MyAI.hpp"
 
-struct Square {
-    bool covered = true;
-    bool flagged = false;
-    short number = -1;
-};
-
-class BoardRep 
-{
-public:
-    const int rowSize;
-    const int colSize;
-    Square** board;
-
-    BoardRep(int _rowDimension, int _colDimension);
-    ~BoardRep() {
-        for (int i = 0; i < rowSize; ++i) {
-            delete[] board[i];
-        }
-        delete[] board;
-    }
-    bool updateSquare(int row, int col, int value);
-    Square* getSquare(int row, int col);
-
-
-private:
-    bool withinBounds(int row, int col);
-};
-
-BoardRep::BoardRep(int _rowDimension, int _colDimension)
-    : rowSize(_rowDimension), colSize(_colDimension)
+// constructor for BoardRep
+BoardRep::BoardRep(int _rowDimension, int _colDimension, int _totalMines)
+    :rowSize(_rowDimension), colSize(_colDimension), totalMines(_totalMines)
 {
     board = new Square*[rowSize];
     Square* column;
     for (int i = 0; i < rowSize; ++i) {
-        column = new Square[colSize];
-        board[i] = column;
+        board[i] = new Square[colSize];
+        for (int j = 0; j < colSize; ++j) {
+            board[i][j] = COVERED;
+        }
     }
+
+    covered_squares = rowSize * colSize;
 }
 
+// destructor for BoardRep
+BoardRep::~BoardRep()
+{
+        for (int i = 0; i < rowSize; ++i) {
+            delete[] board[i];
+        }
+        delete[] board;
+}
+
+// Returns true only if provided row and col are within bounds.
 bool BoardRep::withinBounds(int row, int col)
 {
     return (row >= 0) && (row < rowSize) && (col >= 0) && (col < colSize);
@@ -69,8 +56,8 @@ bool BoardRep::updateSquare(int row, int col, int value)
     if (!withinBounds(row, col)) {
         return false;
     }
-    board[row][col].number = value;
-    board[row][col].covered = false;
+    board[row][col] = value;
+    covered_squares -= 1;
     return true;
 }
 
@@ -83,19 +70,24 @@ Square* BoardRep::getSquare(int row, int col)
     return &board[row][col];
 }
 
-/* Hi Krishna! Everything above this comment until the #include was added by me.
-// As a hint, _agentX and _agentY seem to indicate the board position of the first uncovered square.
-// Using updateSquare() on the board with the number passed as an argument to getAction(number) should
-// put the first number on the board, giving you the information that you'll need to choose basic actions
-*/ 
+bool BoardRep::isDone()
+{
+    return covered_squares <= totalMines;
+}
 
+
+// Start of myAI class, which contains core functionality
 MyAI::MyAI ( int _rowDimension, int _colDimension, int _totalMines, int _agentX, int _agentY ) : Agent()
 {
-
+    BoardRep* board = new BoardRep(_rowDimension, _colDimension, _totalMines);
+    agentX = _agentX;
+    agentY = _agentY;
 };
 
 Agent::Action MyAI::getAction( int number )
 {
-
-    return {LEAVE,-1,-1};
+    if (board->isDone()) {
+        return {LEAVE,-1,-1};
+    }
+    
 }
