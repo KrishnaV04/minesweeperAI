@@ -164,6 +164,7 @@ void MyAI::add_neighbors(Coord& coord, Square label, list<Coord>& list)
                 }
             }
         }
+        
     } else {
         for(int i = coord.x-1; i <= coord.x+1; ++i) {
             for(int j = coord.y-1; j <= coord.y+1; --j) {
