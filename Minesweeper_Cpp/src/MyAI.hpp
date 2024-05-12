@@ -24,6 +24,7 @@
 #include <iostream> // temporary use
 #include <vector>
 #include <map>
+#include <list>
 #include <set>
 #include <algorithm>
 
@@ -50,9 +51,15 @@ public:
     bool updateSquare(int row, int col, int value);
     Square* getSquare(int row, int col);
     bool isDone();
-
-private:
     bool withinBounds(int row, int col);
+
+};
+
+struct Coord {
+    int x;
+    int y;
+
+    Coord(int xCoord, int yCoord) : x(xCoord), y(yCoord) {}
 };
 
 // AI Class
@@ -60,9 +67,16 @@ class MyAI : public Agent
 {
 public:
     MyAI ( int _rowDimension, int _colDimension, int _totalMines, int _agentX, int _agentY );
+    ~MyAI();
     Action getAction ( int number ) override;
 
-    BoardRep* board;
+    // Adds neighbors of coordinates provided which have a certain type, to the provided list.
+    void add_neighbors(Coord& coord, Square type, list<Coord>& list);
+    int count_neighbors(Coord& coord, Square type, list<Coord>& list);
+
+    list<Coord> toUncoverList;
+    list<Coord> toProcessList;
+    BoardRep* boardObj;
     int agentX;
     int agentY;
 

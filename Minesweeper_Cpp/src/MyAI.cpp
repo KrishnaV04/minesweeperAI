@@ -56,8 +56,12 @@ bool BoardRep::updateSquare(int row, int col, int value)
     if (!withinBounds(row, col)) {
         return false;
     }
+
+    if (board[row][col] < 0)
+    {
+        covered_squares -= 1;
+    }
     board[row][col] = value;
-    covered_squares -= 1;
     return true;
 }
 
@@ -79,15 +83,64 @@ bool BoardRep::isDone()
 // Start of myAI class, which contains core functionality
 MyAI::MyAI ( int _rowDimension, int _colDimension, int _totalMines, int _agentX, int _agentY ) : Agent()
 {
-    BoardRep* board = new BoardRep(_rowDimension, _colDimension, _totalMines);
+    BoardRep* boardObj = new BoardRep(_rowDimension, _colDimension, _totalMines);
     agentX = _agentX;
     agentY = _agentY;
 };
 
-Agent::Action MyAI::getAction( int number )
+MyAI::~MyAI() {
+    delete boardObj;
+}
+
+Agent::Action MyAI::getAction(int number)
 {
-    if (board->isDone()) {
+    boardObj->updateSquare(agentX, agentY, number);
+
+    if (boardObj->isDone()) {
         return {LEAVE,-1,-1};
     }
+
+    Coord currentCoord = Coord(agentX, agentY);
+
+    if (number == 0)
+    {
+        add_neighbors(currentCoord, COVERED, toUncoverList);
+
+    } else if (number == 1)
+    {
+        toProcessList.push_back(currentCoord);
+        
+    } else {
+        return {LEAVE,-1,-1}; // temporarily
+    }
+
+    if(!toUncoverList.empty())
+    {
+        Coord next = toUncoverList.front();
+        toUncoverList.pop_front();
+        agentX = next.x;
+        agentY = next.y;
+        return {UNCOVER, agentX, agentY};
+    }
+    else if (!toProcessList.empty())
+    {
+        // process front coords untill toUncoverList fills
+    }
+    else 
+    {
+        cout << "Exhausted Definite Cases" << endl;
+        return {LEAVE, -1, -1}; // temporarily as exhausted rest
+    }
     
+}
+
+void MyAI::add_neighbors(Coord& coord, Square type, list<Coord>& list)
+{   
+    for(int i = coord.x-1; i <= coord.x+1; ++i) {
+        for(int j = coord.y-1; j <= coord.y+1; --j) {
+            if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == type) {
+                list.push_back(Coord(i, j));
+            }
+        }
+    }
 }
