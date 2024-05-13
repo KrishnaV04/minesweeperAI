@@ -21,7 +21,7 @@
 #define MINE_SWEEPER_CPP_SHELL_MYAI_HPP
 
 #include "Agent.hpp"
-#include <iostream> // temporary use
+#include <iostream>
 #include <vector>
 #include <map>
 #include <list>
@@ -31,6 +31,7 @@
 #define COVERED -1
 #define FLAGGED -2
 #define NUMBERED -3
+#define INVALID -4
 typedef int Square;
 
 using namespace std;
@@ -49,18 +50,16 @@ public:
     // functions in BoardRep
     BoardRep(int _rowDimension, int _colDimension, int _totalMines);
     ~BoardRep();
-    bool updateSquare(int row, int col, Square value);
-    Square* getSquare(int row, int col);
+    bool updateSquare(int col, int row, Square value);
+    Square getSquare(int col, int row);
     bool isDone();
-    bool withinBounds(int row, int col);
-    void flagSquared(int row, int col);
-
+    bool withinBounds(int col, int row);
+    void flagSquared(int col, int row);
 };
 
 struct Coord {
     int x;
     int y;
-
     Coord(int xCoord, int yCoord) : x(xCoord), y(yCoord) {}
 };
 
@@ -80,8 +79,7 @@ public:
     list<Coord> toUncoverList;
     list<Coord> toProcessList;
     BoardRep* boardObj;
-    int agentX;
-    int agentY;
+    Coord agentCoord = Coord(0,0);
 
 };
 
