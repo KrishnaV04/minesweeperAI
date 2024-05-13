@@ -151,8 +151,8 @@ Agent::Action MyAI::getAction(int number)
         }
     }
 
-    cout << "Exhausted Definite Cases: ";
-    cout << boardObj->covered_squares << endl;
+    // cout << "Exhausted Definite Cases: ";
+    // cout << boardObj->covered_squares << endl;
     return {LEAVE, -1, -1}; // temporarily as exhausted rest 
 }
 
