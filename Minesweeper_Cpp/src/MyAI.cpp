@@ -22,16 +22,14 @@
 // constructor for BoardRep
 BoardRep::BoardRep(int _rowDimension, int _colDimension, int _totalMines)
     :rowSize(_rowDimension), colSize(_colDimension), totalMines(_totalMines)
-{
+{   
     board = new Square*[rowSize];
-    Square* column;
     for (int i = 0; i < rowSize; ++i) {
         board[i] = new Square[colSize];
         for (int j = 0; j < colSize; ++j) {
             board[i][j] = COVERED;
         }
     }
-
     covered_squares = rowSize * colSize;
 }
 
@@ -74,15 +72,16 @@ Square* BoardRep::getSquare(int row, int col)
     return &board[row][col];
 }
 
+// returns true if isDone
 bool BoardRep::isDone()
 {
     return covered_squares <= totalMines;
 }
 
 // Start of myAI class, which contains core functionality
-MyAI::MyAI ( int _rowDimension, int _colDimension, int _totalMines, int _agentX, int _agentY ) : Agent()
+MyAI::MyAI (int _rowDimension, int _colDimension, int _totalMines, int _agentX, int _agentY) : Agent()
 {
-    BoardRep* boardObj = new BoardRep(_rowDimension, _colDimension, _totalMines);
+    boardObj = new BoardRep(_rowDimension, _colDimension, _totalMines);
     agentX = _agentX;
     agentY = _agentY;
 };
@@ -108,7 +107,7 @@ Agent::Action MyAI::getAction(int number)
     } else if (number == 1)
     {
         toProcessList.push_back(currentCoord);
-        
+
     } else {
         return {LEAVE,-1,-1}; // temporarily
     }
@@ -120,9 +119,13 @@ Agent::Action MyAI::getAction(int number)
             
             Coord nextCoord = toUncoverList.front();
             toUncoverList.pop_front();
-            agentX = nextCoord.x;
-            agentY = nextCoord.y;
-            return {UNCOVER, agentX, agentY};
+            if(*boardObj->getSquare(nextCoord.x, nextCoord.y) == COVERED)
+            {
+                agentX = nextCoord.x;
+                agentY = nextCoord.y;
+                return {UNCOVER, agentX, agentY};
+            }
+            
         }
         else if (!toProcessList.empty())
         {
@@ -148,26 +151,32 @@ Agent::Action MyAI::getAction(int number)
         }
     }
 
-    cout << "Exhausted Definite Cases" << endl;
+    cout << "Exhausted Definite Cases: ";
+    cout << boardObj->covered_squares << endl;
     return {LEAVE, -1, -1}; // temporarily as exhausted rest 
 }
-
 
 void MyAI::add_neighbors(Coord& coord, Square label, list<Coord>& list)
 {   
     // very ugly :(
     if(label == NUMBERED) {
         for(int i = coord.x-1; i <= coord.x+1; ++i) {
-            for(int j = coord.y-1; j <= coord.y+1; --j) {
+            for(int j = coord.y-1; j <= coord.y+1; ++j) {
+                if (i == coord.x && j == coord.y) {
+                continue;
+                }
                 if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) >= 0) {
                     list.push_back(Coord(i, j));
                 }
             }
         }
-        
+
     } else {
         for(int i = coord.x-1; i <= coord.x+1; ++i) {
-            for(int j = coord.y-1; j <= coord.y+1; --j) {
+            for(int j = coord.y-1; j <= coord.y+1; ++j) {
+                if (i == coord.x && j == coord.y) {
+                continue;
+                }
                 if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == label) {
                     list.push_back(Coord(i, j));
                 }
@@ -176,13 +185,15 @@ void MyAI::add_neighbors(Coord& coord, Square label, list<Coord>& list)
     }
 }
 
-
 int MyAI::count_neighbors(Coord& coord, Square label) 
 {
     int sum = 0;
     for (int i = coord.x-1; i <= coord.x+1; ++i) {
-        for(int j = coord.y-1; j <= coord.y+1; --j) 
+        for(int j = coord.y-1; j <= coord.y+1; ++j) 
         {
+            if (i == coord.x && j == coord.y) {
+                continue;
+            }
             if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == label) {
                 ++sum;
             }
@@ -195,8 +206,11 @@ list<Coord> MyAI::update_neighbors(Coord& coord, Square oldtype, Square newtype)
 {
     list<Coord> updated;
     for (int i = coord.x-1; i <= coord.x+1; ++i) {
-        for(int j = coord.y-1; j <= coord.y+1; --j) 
+        for(int j = coord.y-1; j <= coord.y+1; ++j)
         {
+            if (i == coord.x && j == coord.y) {
+                continue;
+            }
             if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == oldtype) {
                 boardObj->updateSquare(i, j, newtype);
                 updated.push_back(Coord(i, j));
@@ -205,32 +219,3 @@ list<Coord> MyAI::update_neighbors(Coord& coord, Square oldtype, Square newtype)
     }
     return updated;
 }
-
-
-/*
-int MyAI::count_neighbors(Coord& coord, Square label)
-{
-    int sum = 0;
-    for(int i = coord.x-1; i <= coord.x+1; ++i) {
-        for(int j = coord.y-1; j <= coord.y+1; --j) {
-            if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == label) {
-                ++sum;
-            }
-        }
-    }
-    return sum;
-}
-
-list<Coord> MyAI::update_neighbors(Coord& coord, Square oldLabel, Square newLabel) {
-    list<Coord> updated;
-    for(int i = coord.x-1; i <= coord.x+1; ++i) {
-        for(int j = coord.y-1; j <= coord.y+1; --j) {
-            if (boardObj->getSquare(i, j) && *boardObj->getSquare(i, j) == oldLabel) {
-                boardObj->updateSquare(i, j, newLabel);
-                updated.push_back(Coord(i, j));
-            }
-        }
-    }
-    return updated;
-}
-*/
