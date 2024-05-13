@@ -72,10 +72,11 @@ public:
     ~MyAI();
     Action getAction ( int number ) override;
 
-    // Adds neighbors of coordinates provided which have a certain type, to the provided list.
     void add_neighbors(Coord& coord, Square type, list<Coord>& list);
     int count_neighbors(Coord& coord, Square type);
     list<Coord> update_neighbors(Coord& coord, Square oldtype, Square newtype);
+
+    void processCoord(Coord nextCoord);
 
     list<Coord> toUncoverList;
     list<Coord> toProcessList;

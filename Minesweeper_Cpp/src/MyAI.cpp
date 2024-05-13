@@ -121,25 +121,29 @@ Agent::Action MyAI::getAction(int number)
         {
             Coord nextCoord = toProcessList.front();
             toProcessList.pop_front();
-            int covered_neighbors = count_neighbors(nextCoord, COVERED);
-            int flagged_neighbors = count_neighbors(nextCoord, FLAGGED);
-            int square_num =  boardObj->getSquare(nextCoord.x, nextCoord.y);
-
-            if (flagged_neighbors == square_num && covered_neighbors) {
-                add_neighbors(nextCoord, COVERED, toUncoverList);
-            }
-            else if (covered_neighbors + flagged_neighbors == square_num) {
-                list<Coord> updated_coords = update_neighbors(nextCoord, COVERED, FLAGGED);
-                for (Coord& c : updated_coords) {
-                    add_neighbors(c, NUMBERED, toProcessList);
-                }
-            }
+            processCoord(nextCoord);
         }
     }
 
     // cout << "Exhausted Definite Cases: ";
     // cout << boardObj->covered_squares << endl;
     return {LEAVE, -1, -1}; // temporarily as exhausted rest 
+}
+
+void MyAI::processCoord(Coord nextCoord) {
+    int covered_neighbors = count_neighbors(nextCoord, COVERED);
+    int flagged_neighbors = count_neighbors(nextCoord, FLAGGED);
+    int square_num =  boardObj->getSquare(nextCoord.x, nextCoord.y);
+
+    if (flagged_neighbors == square_num && covered_neighbors) {
+        add_neighbors(nextCoord, COVERED, toUncoverList);
+    }
+    else if (covered_neighbors + flagged_neighbors == square_num) {
+        list<Coord> updated_coords = update_neighbors(nextCoord, COVERED, FLAGGED);
+        for (Coord& c : updated_coords) {
+            add_neighbors(c, NUMBERED, toProcessList);
+        }
+    }
 }
 
 void MyAI::add_neighbors(Coord& coord, Square type, list<Coord>& list)
