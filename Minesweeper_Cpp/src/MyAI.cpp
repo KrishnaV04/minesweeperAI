@@ -125,7 +125,7 @@ Agent::Action MyAI::getAction(int number)
             int flagged_neighbors = count_neighbors(nextCoord, FLAGGED);
             int square_num =  boardObj->getSquare(nextCoord.x, nextCoord.y);
 
-            if (flagged_neighbors == square_num) {
+            if (flagged_neighbors == square_num && covered_neighbors) {
                 add_neighbors(nextCoord, COVERED, toUncoverList);
             }
             else if (covered_neighbors + flagged_neighbors == square_num) {

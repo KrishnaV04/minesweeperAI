@@ -27,6 +27,7 @@
 #include <list>
 #include <set>
 #include <algorithm>
+#include <unordered_set>
 
 #define COVERED -1
 #define FLAGGED -2
@@ -78,6 +79,7 @@ public:
 
     list<Coord> toUncoverList;
     list<Coord> toProcessList;
+    
     BoardRep* boardObj;
     Coord agentCoord = Coord(0,0);
 
