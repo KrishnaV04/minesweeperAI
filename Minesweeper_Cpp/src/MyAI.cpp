@@ -30,7 +30,7 @@ BoardRep::BoardRep(int _rowDimension, int _colDimension, int _totalMines)
             board[i][j] = COVERED;
         }
     }
-    covered_squares = rowSize * colSize;
+    covered_sq_count = rowSize * colSize;
 }
 
 // destructor for BoardRep
@@ -54,10 +54,10 @@ bool BoardRep::updateSquare(int col, int row, Square value)
 {
     if (!withinBounds(col, row)) {
         return false;
-    }
-    if (board[row][col] < 0 && value > 0)
-    {
-        covered_squares -= 1;
+    } 
+    // checks to make sure board had a covered square and then is getting uncovered
+    else if (board[row][col] == COVERED && value >= 0) {
+        covered_sq_count -= 1;
     }
     board[row][col] = value;
     return true;
@@ -75,7 +75,7 @@ Square BoardRep::getSquare(int col, int row)
 // returns true if isDone
 bool BoardRep::isDone()
 {
-    return covered_squares <= totalMines;
+    return covered_sq_count <= totalMines;
 }
 
 // Start of myAI class, which contains core functionality
@@ -91,19 +91,15 @@ MyAI::~MyAI() {
 
 Agent::Action MyAI::getAction(int number)
 {
-    boardObj->updateSquare(agentCoord.x, agentCoord.y, number);
+    //1: Process Uncovered Coord
+    process_uncovered_coord(agentCoord, number);
+
+    //2: Check if Board is Complete
     if (boardObj->isDone()) {
         return {LEAVE,-1,-1};
     }
 
-    Coord currentCoord = Coord(agentCoord.x, agentCoord.y);
-    if (number == 0) {
-        add_neighbors(currentCoord, COVERED, toUncoverList);
-
-    } else { 
-        toProcessList.push_back(currentCoord);
-    }
-
+    //3: SimglePointProcess Strategy Implementation
     while(!toUncoverList.empty() || !toProcessList.empty()) 
     {
         if(!toUncoverList.empty())
@@ -121,16 +117,28 @@ Agent::Action MyAI::getAction(int number)
         {
             Coord nextCoord = toProcessList.front();
             toProcessList.pop_front();
-            processCoord(nextCoord);
+            singlePointProcess(nextCoord);
         }
     }
 
-    // cout << "Exhausted Definite Cases: ";
-    // cout << boardObj->covered_squares << endl;
-    return {LEAVE, -1, -1}; // temporarily as exhausted rest 
+    //4: Local Model Checking Strategy 
+
+    //5: Best Probability Strategy
+    return {LEAVE, -1, -1}; // temporarily as not implemented best prob strategy
 }
 
-void MyAI::processCoord(Coord nextCoord) {
+void MyAI::process_uncovered_coord(Coord coord, int number) {
+    boardObj->updateSquare(coord.x, coord.y, number);
+    
+    if (number == 0) {
+        add_neighbors(coord, COVERED, toUncoverList);
+
+    } else { 
+        toProcessList.push_back(coord);
+    }
+}
+
+void MyAI::singlePointProcess(Coord nextCoord) {
     int covered_neighbors = count_neighbors(nextCoord, COVERED);
     int flagged_neighbors = count_neighbors(nextCoord, FLAGGED);
     int square_num =  boardObj->getSquare(nextCoord.x, nextCoord.y);
@@ -155,7 +163,6 @@ void MyAI::add_neighbors(Coord& coord, Square type, list<Coord>& list)
                 ((type == NUMBERED && boardObj->getSquare(i, j) >= 0) || 
                 (boardObj->getSquare(i, j) == type)))
             {
-                // cout << "added: " << i << ", " << j << endl;
                 list.push_back(Coord(i, j));
             }
         }

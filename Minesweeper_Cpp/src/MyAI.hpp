@@ -24,7 +24,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <list>
+#include <list> // TODO for an opt try to remove lists and only use vectors and queues
 #include <set>
 #include <algorithm>
 #include <unordered_set>
@@ -37,6 +37,12 @@ typedef int Square;
 
 using namespace std;
 
+struct Coord {
+    int x;
+    int y;
+    Coord(int xCoord, int yCoord) : x(xCoord), y(yCoord) {}
+};
+
 // BoardRepresentation Class
 class BoardRep 
 {
@@ -45,8 +51,9 @@ public:
     const int rowSize;
     const int colSize;
     const int totalMines;
-    int covered_squares;
+    int covered_sq_count;
     Square** board;
+    list<Coord> all_covered_coords;
 
     // functions in BoardRep
     BoardRep(int _rowDimension, int _colDimension, int _totalMines);
@@ -58,12 +65,6 @@ public:
     void flagSquared(int col, int row);
 };
 
-struct Coord {
-    int x;
-    int y;
-    Coord(int xCoord, int yCoord) : x(xCoord), y(yCoord) {}
-};
-
 // AI Class
 class MyAI : public Agent
 {
@@ -72,11 +73,14 @@ public:
     ~MyAI();
     Action getAction ( int number ) override;
 
+    void process_uncovered_coord(Coord coord, int number);
     void add_neighbors(Coord& coord, Square type, list<Coord>& list);
     int count_neighbors(Coord& coord, Square type);
     list<Coord> update_neighbors(Coord& coord, Square oldtype, Square newtype);
+    void get_frontiers(list<Coord>& all_covered, list<Coord>& frontier_covered, list<Coord>& frontier_uncovered_sq, map<Coord,list<Coord>>& uncovered_neighbors_of_covered, map<Coord, list<Coord>>& covered_neighbors_of_uncovered);
+    map<Coord, int> get_consistent_mappings(list<map<Coord, int>>& possible_mappings);
 
-    void processCoord(Coord nextCoord);
+    void singlePointProcess(Coord nextCoord);
 
     list<Coord> toUncoverList;
     list<Coord> toProcessList;
