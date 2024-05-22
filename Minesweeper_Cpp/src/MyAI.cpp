@@ -95,12 +95,12 @@ MyAI::~MyAI() {
 
 Agent::Action MyAI::getAction(int number)
 {
-    //debug
-    for (const Coord& coord : toProcessList) {
-        cout << coord.toString() << " ";
-    }
-    cout << endl;
-    //end debug
+    // //debug
+    // for (const Coord& coord : toProcessList) {
+    //     cout << coord.toString() << " ";
+    // }
+    // cout << endl;
+    // //end debug
     
     //1: Process Uncovered Coord
     process_uncovered_coord(agentCoord, number);
@@ -205,13 +205,12 @@ list<Coord> MyAI::update_neighbors(Coord& coord, Square oldtype, Square newtype)
         for(int j = coord.y-1; j <= coord.y+1; ++j) {
             if ((i != coord.x || j != coord.y) &&
                 boardObj->getSquare(i, j) != INVALID &&
-                //((oldtype == NUMBERED && boardObj->getSquare(i, j) >= 0) ||  // TODO do we need update number
-                (boardObj->getSquare(i, j) == oldtype)) //)
+                (boardObj->getSquare(i, j) == oldtype))
             {
-                //DEBUG
-                if (boardObj->getSquare(i,j) == COVERED) {
-                    cout << "flagged point (" << i+1 << ", " << j+1 << ")" << endl;
-                }
+                // //DEBUG
+                // if (boardObj->getSquare(i,j) == COVERED) {
+                //     cout << "flagged point (" << i+1 << ", " << j+1 << ")" << endl;
+                // }
                 boardObj->updateSquare(i, j, newtype);
                 updated.push_back(Coord(i, j));
             }
