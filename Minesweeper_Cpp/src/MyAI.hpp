@@ -41,6 +41,7 @@ struct Coord {
     int x;
     int y;
     Coord(int xCoord, int yCoord) : x(xCoord), y(yCoord) {}
+    string toString() const;
 };
 
 // BoardRepresentation Class

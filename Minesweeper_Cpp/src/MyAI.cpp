@@ -19,6 +19,10 @@
 
 #include "MyAI.hpp"
 
+string Coord::toString() const {
+        return "(" + std::to_string(x+1) + ", " + std::to_string(y+1) + ")";
+}
+
 // constructor for BoardRep
 BoardRep::BoardRep(int _rowDimension, int _colDimension, int _totalMines)
     :rowSize(_rowDimension), colSize(_colDimension), totalMines(_totalMines)
@@ -91,6 +95,13 @@ MyAI::~MyAI() {
 
 Agent::Action MyAI::getAction(int number)
 {
+    //debug
+    for (const Coord& coord : toProcessList) {
+        cout << coord.toString() << " ";
+    }
+    cout << endl;
+    //end debug
+    
     //1: Process Uncovered Coord
     process_uncovered_coord(agentCoord, number);
 
@@ -135,6 +146,7 @@ void MyAI::process_uncovered_coord(Coord coord, int number) {
 
     } else { 
         toProcessList.push_back(coord);
+        add_neighbors(coord, UNCOVER, toProcessList);
     }
 }
 
@@ -193,9 +205,13 @@ list<Coord> MyAI::update_neighbors(Coord& coord, Square oldtype, Square newtype)
         for(int j = coord.y-1; j <= coord.y+1; ++j) {
             if ((i != coord.x || j != coord.y) &&
                 boardObj->getSquare(i, j) != INVALID &&
-                ((oldtype == NUMBERED && boardObj->getSquare(i, j) >= 0) || 
-                (boardObj->getSquare(i, j) == oldtype)))
+                //((oldtype == NUMBERED && boardObj->getSquare(i, j) >= 0) ||  // TODO do we need update number
+                (boardObj->getSquare(i, j) == oldtype)) //)
             {
+                //DEBUG
+                if (boardObj->getSquare(i,j) == COVERED) {
+                    cout << "flagged point (" << i+1 << ", " << j+1 << ")" << endl;
+                }
                 boardObj->updateSquare(i, j, newtype);
                 updated.push_back(Coord(i, j));
             }
