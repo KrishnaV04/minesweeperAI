@@ -94,14 +94,7 @@ MyAI::~MyAI() {
 }
 
 Agent::Action MyAI::getAction(int number)
-{
-    // //debug
-    // for (const Coord& coord : toProcessList) {
-    //     cout << coord.toString() << " ";
-    // }
-    // cout << endl;
-    // //end debug
-    
+{   
     //1: Process Uncovered Coord
     process_uncovered_coord(agentCoord, number);
 
@@ -111,12 +104,12 @@ Agent::Action MyAI::getAction(int number)
     }
 
     //3: SimglePointProcess Strategy Implementation
-    while(!toUncoverList.empty() || !toProcessList.empty()) 
+    while(!toUncoverVector.empty() || !toProcessVector.empty()) 
     {
-        if(!toUncoverList.empty())
+        if(!toUncoverVector.empty())
         {
-            Coord nextCoord = toUncoverList.front();
-            toUncoverList.pop_front();
+            Coord nextCoord = toUncoverVector.back();
+            toUncoverVector.pop_back();
             if(boardObj->getSquare(nextCoord.x, nextCoord.y) == COVERED)
             {
                 agentCoord = nextCoord;
@@ -124,10 +117,10 @@ Agent::Action MyAI::getAction(int number)
             }
             
         }
-        else if (!toProcessList.empty())
+        else if (!toProcessVector.empty())
         {
-            Coord nextCoord = toProcessList.front();
-            toProcessList.pop_front();
+            Coord nextCoord = toProcessVector.back();
+            toProcessVector.pop_back();
             singlePointProcess(nextCoord);
         }
     }
@@ -142,11 +135,11 @@ void MyAI::process_uncovered_coord(Coord& coord, int number) {
     boardObj->updateSquare(coord.x, coord.y, number);
     
     if (number == 0) {
-        add_neighbors(coord, COVERED, toUncoverList);
+        add_neighbors(coord, COVERED, toUncoverVector);
 
     } else { 
-        toProcessList.push_back(coord);
-        add_neighbors(coord, UNCOVER, toProcessList);
+        toProcessVector.push_back(coord);
+        add_neighbors(coord, UNCOVER, toProcessVector);
     }
 }
 
@@ -156,17 +149,17 @@ void MyAI::singlePointProcess(Coord& nextCoord) {
     int square_num =  boardObj->getSquare(nextCoord.x, nextCoord.y);
 
     if (flagged_neighbors == square_num && covered_neighbors) {
-        add_neighbors(nextCoord, COVERED, toUncoverList);
+        add_neighbors(nextCoord, COVERED, toUncoverVector);
     }
     else if (covered_neighbors + flagged_neighbors == square_num) {
-        list<Coord> updated_coords = update_neighbors(nextCoord, COVERED, FLAGGED);
+        vector<Coord> updated_coords = update_neighbors(nextCoord, COVERED, FLAGGED);
         for (Coord& c : updated_coords) {
-            add_neighbors(c, NUMBERED, toProcessList);
+            add_neighbors(c, NUMBERED, toProcessVector);
         }
     }
 }
 
-void MyAI::add_neighbors(Coord& coord, Square type, list<Coord>& list)
+void MyAI::add_neighbors(Coord& coord, Square type, vector<Coord>& list)
 {   
     for(int i = coord.x-1; i <= coord.x+1; ++i) {
         for(int j = coord.y-1; j <= coord.y+1; ++j) {
@@ -198,19 +191,15 @@ int MyAI::count_neighbors(Coord& coord, Square type)
     return sum;
 }
 
-list<Coord> MyAI::update_neighbors(Coord& coord, Square oldtype, Square newtype)
+vector<Coord> MyAI::update_neighbors(Coord& coord, Square oldtype, Square newtype)
 {
-    list<Coord> updated;
+    vector<Coord> updated;
     for(int i = coord.x-1; i <= coord.x+1; ++i) {
         for(int j = coord.y-1; j <= coord.y+1; ++j) {
             if ((i != coord.x || j != coord.y) &&
                 boardObj->getSquare(i, j) != INVALID &&
                 (boardObj->getSquare(i, j) == oldtype))
             {
-                // //DEBUG
-                // if (boardObj->getSquare(i,j) == COVERED) {
-                //     cout << "flagged point (" << i+1 << ", " << j+1 << ")" << endl;
-                // }
                 boardObj->updateSquare(i, j, newtype);
                 updated.push_back(Coord(i, j));
             }
