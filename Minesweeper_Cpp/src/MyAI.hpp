@@ -74,14 +74,14 @@ public:
     ~MyAI();
     Action getAction ( int number ) override;
 
-    void process_uncovered_coord(Coord coord, int number);
+    void process_uncovered_coord(Coord& coord, int number);
     void add_neighbors(Coord& coord, Square type, list<Coord>& list);
     int count_neighbors(Coord& coord, Square type);
     list<Coord> update_neighbors(Coord& coord, Square oldtype, Square newtype);
     void get_frontiers(list<Coord>& all_covered, list<Coord>& frontier_covered, list<Coord>& frontier_uncovered_sq, map<Coord,list<Coord>>& uncovered_neighbors_of_covered, map<Coord, list<Coord>>& covered_neighbors_of_uncovered);
     map<Coord, int> get_consistent_mappings(list<map<Coord, int>>& possible_mappings);
 
-    void singlePointProcess(Coord nextCoord);
+    void singlePointProcess(Coord& nextCoord);
 
     list<Coord> toUncoverList;
     list<Coord> toProcessList;

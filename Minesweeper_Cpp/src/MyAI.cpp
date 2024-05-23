@@ -138,7 +138,7 @@ Agent::Action MyAI::getAction(int number)
     return {LEAVE, -1, -1}; // temporarily as not implemented best prob strategy
 }
 
-void MyAI::process_uncovered_coord(Coord coord, int number) {
+void MyAI::process_uncovered_coord(Coord& coord, int number) {
     boardObj->updateSquare(coord.x, coord.y, number);
     
     if (number == 0) {
@@ -150,7 +150,7 @@ void MyAI::process_uncovered_coord(Coord coord, int number) {
     }
 }
 
-void MyAI::singlePointProcess(Coord nextCoord) {
+void MyAI::singlePointProcess(Coord& nextCoord) {
     int covered_neighbors = count_neighbors(nextCoord, COVERED);
     int flagged_neighbors = count_neighbors(nextCoord, FLAGGED);
     int square_num =  boardObj->getSquare(nextCoord.x, nextCoord.y);
