@@ -83,7 +83,7 @@ public:
     void singlePointProcess(Coord& nextCoord);
 
     vector<Coord> toUncoverVector;
-    unordered_set<Coord> toProcessSet;
+    // unordered_set<Coord> toProcessSet;
     vector<Coord> toProcessVector;
     
     BoardRep* boardObj;
