@@ -45,6 +45,7 @@
 #include <iostream>
 #include <dirent.h>
 #include <cmath>
+#include <chrono>
 #include "World.hpp"
 #include <sys/stat.h>
 
@@ -152,6 +153,7 @@ int main( int argc, char *argv[] )
         int medium = 0;
         int expert = 0;
 
+        auto start = chrono::high_resolution_clock::now(); //ADDED
         while ((ent = readdir(dir)) != NULL)
         {
             if (ent->d_name[0] == '.')
@@ -179,6 +181,7 @@ int main( int argc, char *argv[] )
 
             sumOfScores += score;
         }
+        auto end = chrono::high_resolution_clock::now(); //ADDED
 
         closedir(dir);
 
@@ -190,6 +193,8 @@ int main( int argc, char *argv[] )
             cout << "medium: "  << medium << endl;
             cout << "expert: " << expert << endl;
             cout << "score: " << sumOfScores << endl;
+            chrono::duration<double> elapsed = end - start;
+            cout << "Time taken to execute function: " << elapsed.count() << " seconds" << std::endl;
         }
         else
         {
