@@ -121,6 +121,7 @@ Agent::Action MyAI::getAction(int number)
         {
             Coord nextCoord = toProcessVector.back();
             toProcessVector.pop_back();
+            toProcessSet.erase(nextCoord);
             singlePointProcess(nextCoord);
         }
     }
@@ -137,9 +138,13 @@ void MyAI::process_uncovered_coord(Coord& coord, int number) {
     if (number == 0) {
         add_neighbors(coord, COVERED, toUncoverVector);
 
-    } else { 
-        toProcessVector.push_back(coord);
-        add_neighbors(coord, UNCOVER, toProcessVector);
+    } else {
+        if (toProcessSet.find(coord) != toProcessSet.end())
+        {
+            toProcessVector.push_back(coord);
+            toProcessSet.insert(coord);
+        }
+        add_neighbors(coord, NUMBERED, toProcessVector);
     }
 }
 
