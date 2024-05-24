@@ -63,7 +63,12 @@ public:
     Square getSquare(int col, int row);
     bool isDone();
     bool withinBounds(int col, int row);
-    void flagSquared(int col, int row);
+};
+
+enum gameTile{
+    NONE,
+    BOMB, 
+    SAFE
 };
 
 // AI Class
@@ -75,19 +80,28 @@ public:
     Action getAction ( int number ) override;
 
     void process_uncovered_coord(Coord& coord, int number);
-    void add_neighbors(Coord& coord, Square type, vector<Coord>& list);
+    void add_neighbors(const Coord& coord, Square type, vector<Coord>& list);
     int count_neighbors(Coord& coord, Square type);
     vector<Coord> update_neighbors(Coord& coord, Square oldtype, Square newtype);
-    map<Coord, int> get_consistent_mappings(list<map<Coord, int>>& possible_mappings);
 
     void singlePointProcess(Coord& nextCoord);
+    
+    void enumerateFrontierStrategy();
+    void process_recursive_mappings(vector<pair<Coord, gameTile>>& coord_mapping, int index, gameTile value);
+    void add_consistent_mappings();
 
+    vector<map<Coord, gameTile>> all_possible_mappings;
+    list<Coord> frontier_covered_coords;
+    
     vector<Coord> toUncoverVector;
     // unordered_set<Coord> toProcessSet;
     vector<Coord> toProcessVector;
     
+    bool justPerfromedEnumeration = false;
     BoardRep* boardObj;
     Coord agentCoord = Coord(0,0);
+    
+
 
 };
 

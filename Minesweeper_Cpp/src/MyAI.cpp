@@ -103,9 +103,9 @@ Agent::Action MyAI::getAction(int number)
         return {LEAVE,-1,-1};
     }
 
-    //3: SimglePointProcess Strategy Implementation
-    while(!toUncoverVector.empty() || !toProcessVector.empty()) 
+    while(!toUncoverVector.empty() || !toProcessVector.empty() || !justPerfromedEnumeration) 
     {
+        //3a: SimglePointProcess Strategy Implementation
         if(!toUncoverVector.empty())
         {
             Coord nextCoord = toUncoverVector.back();
@@ -115,21 +115,102 @@ Agent::Action MyAI::getAction(int number)
                 agentCoord = nextCoord;
                 return {UNCOVER, agentCoord.x, agentCoord.y};
             }
-            
+            justPerfromedEnumeration = false; // needed for #4
         }
+
+        //3b: SimglePointProcess Strategy Implementation
         else if (!toProcessVector.empty())
         {
             Coord nextCoord = toProcessVector.back();
             toProcessVector.pop_back();
             // toProcessSet.erase(nextCoord);
             singlePointProcess(nextCoord);
-        }
-    }
 
-    //4: Local Model Checking Strategy 
+            justPerfromedEnumeration = false; // needed for #4
+        }
+
+        //4: Enumerate Frontier Checking Strategy 
+        else if (!justPerfromedEnumeration)
+        {
+            //enumerateFrontierStrategy();
+            justPerfromedEnumeration = true;
+        }
+    }    
 
     //5: Best Probability Strategy
     return {LEAVE, -1, -1}; // temporarily as not implemented best prob strategy
+}
+
+void MyAI::enumerateFrontierStrategy() {
+    vector<pair<Coord, gameTile>> covered_frontier_enumerate;
+    process_recursive_mappings(covered_frontier_enumerate, 0, BOMB);
+    process_recursive_mappings(covered_frontier_enumerate, 0, SAFE);
+    add_consistent_mappings();
+    
+}
+
+void MyAI::process_recursive_mappings(vector<pair<Coord, gameTile>>& vector_to_enumerate, int index, gameTile value) {
+    
+    vector_to_enumerate[index].second = value;
+    Coord& c = vector_to_enumerate[index].first;
+    if (value == BOMB)  // temporarily done for constraint checking
+        boardObj->updateSquare(c.x, c.y, FLAGGED);
+    
+
+    /*
+    update coord_mapping with index with value
+    if coord_mapping does not break constraints
+        if index is mapping_length - 1:
+            add coord_mapping to all_possible_mappings
+            return // successfully processed this branch
+        else:
+            process_recursive_mappings(mapping, index+1, bomb)
+            change mapping[index+1] back to -1
+            process_recursive_mappings(mapping, index+1, safe)
+            change mapping[index+1] back to -1?
+    else:
+        return // as we broke constraints so this entire branch can be pruned
+    */
+}
+
+void MyAI::add_consistent_mappings() {
+    map<Coord, gameTile> cmap;
+
+    // populate cmap
+    // if(all_possible_mappings.size() == 0) {
+    //     return;
+    // } else if (all_possible_mappings.size() == 1){
+    //     for (const auto& pair : all_possible_mappings[0])
+    //         cmap.emplace(pair.first, pair.second);
+    // } else {
+    //     const std::map<Coord, gameTile>& first_map = all_possible_mappings[0];
+    //     for (const auto& pair : first_map) {
+    //         const Coord& c = pair.first;
+    //         const gameTile& tile = pair.second;
+    //         bool all_equal = true;
+    //         for (const auto& mapping : all_possible_mappings) {
+    //             if (mapping.at(c) != tile) {
+    //                 all_equal = false;
+    //                 break;
+    //             }
+    //         }
+    //         if (all_equal) {
+    //             cmap[c] = tile;
+    //         }
+    //     }
+    // }
+
+    // // for consistent coords take action
+    // for (auto& pair : cmap) {
+    //     if(pair.second == BOMB){
+    //         boardObj->updateSquare(pair.first.x, pair.first.y, FLAGGED);
+    //         add_neighbors(pair.first, COVERED, toProcessVector);
+    //     } else if (pair.second == SAFE){
+    //         toUncoverVector.push_back(Coord{pair.first.x, pair.first.y});
+    //     }
+    // }
+
+    // all_possible_mappings.clear();
 }
 
 void MyAI::process_uncovered_coord(Coord& coord, int number) {
@@ -164,7 +245,7 @@ void MyAI::singlePointProcess(Coord& nextCoord) {
     }
 }
 
-void MyAI::add_neighbors(Coord& coord, Square type, vector<Coord>& list)
+void MyAI::add_neighbors(const Coord& coord, Square type, vector<Coord>& list)
 {   
     for(int i = coord.x-1; i <= coord.x+1; ++i) {
         for(int j = coord.y-1; j <= coord.y+1; ++j) {
