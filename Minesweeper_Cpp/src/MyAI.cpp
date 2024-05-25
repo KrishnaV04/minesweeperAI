@@ -50,6 +50,56 @@ BoardRep::~BoardRep()
         delete[] board;
 }
 
+// Returns True if the coordinate is uncovered
+bool BoardRep::isUncovered(Coord co) 
+{
+    return getSquare(co.x, co.y) >= 0;
+}
+
+// Returns True if both are covered or both are uncovered. Bounds checking is applied to b
+bool BoardRep::matchingStatus(Coord a, Coord b)
+{
+    return isUncovered(a) == isUncovered(b);
+}
+
+// Returns a list of all adjacent Coordinates of opposite status
+list<Coord> BoardRep::listOppositeNeighbors(Coord coord)
+{
+    list<Coord> opposite_neighbors;
+    Coord neighbor {0, 0};
+    for(int i = coord.x-1; i <= coord.x+1; ++i) {
+        for(int j = coord.y-1; j <= coord.y+1; ++j) {
+            neighbor = Coord{i, j};
+            if ((i != coord.x || j != coord.y) &&
+                withinBounds(i, j) &&
+                !matchingStatus(coord, neighbor))
+            {
+                opposite_neighbors.push_back(neighbor);
+            }
+        }
+    }
+    return opposite_neighbors;
+}
+
+// Returns a list of all adjacent Coordinates of opposite status
+list<Coord> BoardRep::listMatchingNeighbors(Coord coord)
+{
+    list<Coord> matching_neighbors;
+    Coord neighbor {0, 0};
+    for(int i = coord.x-1; i <= coord.x+1; ++i) {
+        for(int j = coord.y-1; j <= coord.y+1; ++j) {
+            neighbor = Coord{i, j};
+            if ((i != coord.x || j != coord.y) &&
+                withinBounds(i, j) &&
+                matchingStatus(coord, neighbor))
+            {
+                matching_neighbors.push_back(neighbor);
+            }
+        }
+    }
+    return matching_neighbors;
+}
+
 // Returns true only if provided row and col are within bounds.
 bool BoardRep::withinBounds(int col, int row)
 {
@@ -97,6 +147,14 @@ MyAI::~MyAI() {
     delete boardObj;
 }
 
+void printCoordSet(std::set<Coord> s) {
+    cout << "{ ";
+    for (auto elem : s) {
+        cout << "(" << elem.x + 1 << ", " << elem.y + 1 << "), ";
+    }
+    cout << " }" << std::endl;
+}
+
 Agent::Action MyAI::getAction(int number)
 {   
     //1: Process Uncovered Coord
@@ -135,7 +193,9 @@ Agent::Action MyAI::getAction(int number)
         //4: Enumerate Frontier Checking Strategy 
         else if (!justPerformedEnumeration)
         {
+            
             //enumerateFrontierStrategy();
+            //printCoordSet(boardObj->frontier_covered);
             justPerformedEnumeration = true;
         }
     }    
@@ -238,6 +298,27 @@ void MyAI::add_consistent_mappings() {
 
 void MyAI::process_uncovered_coord(Coord& coord, int number) {
     boardObj->updateSquare(coord.x, coord.y, number);
+
+    // Changes 5/18: Updating the covered and uncovered frontiers
+    boardObj->frontier_covered.erase(coord); // 1. Remove the uncovered coord from the covered frontier, if it exists
+    list<Coord> opposite_neighbors = boardObj->listOppositeNeighbors(coord); // 2. Find the covered neighbors of coord
+    list<Coord> matching_neighbors = boardObj->listMatchingNeighbors(coord); // 2.5 Find the uncovered neighbors of coord
+    list<Coord> coord2;
+    if (opposite_neighbors.size()) { // 3. If the uncovered coord has covered neighbors, then it now belongs in the uncovered frontier
+        boardObj->frontier_uncovered.insert(coord);
+        for (Coord covered_adj: opposite_neighbors) { // 4. Enter all the covered neighbors into the covered frontier
+            boardObj->frontier_covered.insert(covered_adj);
+        }
+    }
+    for (Coord uncovered_adj : matching_neighbors) { // 5. Remove any uncovered neighbors of coord if they leave the uncovered frontier
+        coord2 = boardObj->listOppositeNeighbors(uncovered_adj);
+        if (!coord2.size()) {
+            boardObj->frontier_uncovered.erase(uncovered_adj);
+        }
+    }
+    //printCoordSet(boardObj->frontier_uncovered); // Debug lines that show the frontiers after the prior iteration
+    //printCoordSet(boardObj->frontier_covered);
+    // end of changes 5/18
     
     if (number == 0) {
         add_neighbors(coord, COVERED, toUncoverVector);

@@ -44,6 +44,10 @@ struct Coord {
     Coord(int xCoord, int yCoord) : x(xCoord), y(yCoord) {}
     string toString() const;
     bool operator<(const Coord& other) const;
+    // Merge 5/24
+    bool operator==(const Coord& other) const {
+        return (x == other.x) && (y == other.y);
+    }
 };
 
 // BoardRepresentation Class
@@ -58,6 +62,10 @@ public:
     Square** board;
     list<Coord> all_covered_coords;
 
+    // Merge 5/24
+    set<Coord> frontier_covered;
+    set<Coord> frontier_uncovered;
+
     // functions in BoardRep
     BoardRep(int _rowDimension, int _colDimension, int _totalMines);
     ~BoardRep();
@@ -65,6 +73,12 @@ public:
     Square getSquare(int col, int row);
     bool isDone();
     bool withinBounds(int col, int row);
+
+    // Merge 5/24
+    bool isUncovered(Coord co); // Returns True if the coordinate is uncovered
+    bool matchingStatus(Coord a, Coord b); // Returns True if both are covered or both are uncovered
+    list<Coord> listOppositeNeighbors(Coord coord); // Returns a list to all of the coords with Squares of opposite status
+    list<Coord> listMatchingNeighbors(Coord coord); // Returns list: matching neighbors
 };
 
 enum gameTile{
