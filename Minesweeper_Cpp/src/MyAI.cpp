@@ -23,6 +23,10 @@ string Coord::toString() const {
         return "(" + std::to_string(x+1) + ", " + std::to_string(y+1) + ")";
 }
 
+bool Coord::operator<(const Coord& other) const {
+        return std::tie(x, y) < std::tie(other.x, other.y);
+}
+
 // constructor for BoardRep
 BoardRep::BoardRep(int _rowDimension, int _colDimension, int _totalMines)
     :rowSize(_rowDimension), colSize(_colDimension), totalMines(_totalMines)
@@ -103,7 +107,7 @@ Agent::Action MyAI::getAction(int number)
         return {LEAVE,-1,-1};
     }
 
-    while(!toUncoverVector.empty() || !toProcessVector.empty() || !justPerfromedEnumeration) 
+    while(!toUncoverVector.empty() || !toProcessVector.empty() || !justPerformedEnumeration) 
     {
         //3a: SimglePointProcess Strategy Implementation
         if(!toUncoverVector.empty())
@@ -115,7 +119,7 @@ Agent::Action MyAI::getAction(int number)
                 agentCoord = nextCoord;
                 return {UNCOVER, agentCoord.x, agentCoord.y};
             }
-            justPerfromedEnumeration = false; // needed for #4
+            justPerformedEnumeration = false; // needed for #4
         }
 
         //3b: SimglePointProcess Strategy Implementation
@@ -123,17 +127,16 @@ Agent::Action MyAI::getAction(int number)
         {
             Coord nextCoord = toProcessVector.back();
             toProcessVector.pop_back();
-            // toProcessSet.erase(nextCoord);
             singlePointProcess(nextCoord);
 
-            justPerfromedEnumeration = false; // needed for #4
+            justPerformedEnumeration = false; // needed for #4
         }
 
         //4: Enumerate Frontier Checking Strategy 
-        else if (!justPerfromedEnumeration)
+        else if (!justPerformedEnumeration)
         {
             //enumerateFrontierStrategy();
-            justPerfromedEnumeration = true;
+            justPerformedEnumeration = true;
         }
     }    
 
@@ -143,74 +146,94 @@ Agent::Action MyAI::getAction(int number)
 
 void MyAI::enumerateFrontierStrategy() {
     vector<pair<Coord, gameTile>> covered_frontier_enumerate;
+
+    
+
+    for(const auto& p : covered_frontier_enumerate)
+        boardObj->updateSquare(p.first.x, p.first.y, UNDEFINED);
     process_recursive_mappings(covered_frontier_enumerate, 0, BOMB);
     process_recursive_mappings(covered_frontier_enumerate, 0, SAFE);
+    for(const auto& p : covered_frontier_enumerate)
+        boardObj->updateSquare(p.first.x, p.first.y, COVERED);
     add_consistent_mappings();
     
 }
 
 void MyAI::process_recursive_mappings(vector<pair<Coord, gameTile>>& vector_to_enumerate, int index, gameTile value) {
-    
-    vector_to_enumerate[index].second = value;
     Coord& c = vector_to_enumerate[index].first;
-    if (value == BOMB)  // temporarily done for constraint checking
-        boardObj->updateSquare(c.x, c.y, FLAGGED);
-    
 
-    /*
-    update coord_mapping with index with value
-    if coord_mapping does not break constraints
-        if index is mapping_length - 1:
-            add coord_mapping to all_possible_mappings
-            return // successfully processed this branch
-        else:
-            process_recursive_mappings(mapping, index+1, bomb)
-            change mapping[index+1] back to -1
-            process_recursive_mappings(mapping, index+1, safe)
-            change mapping[index+1] back to -1?
-    else:
-        return // as we broke constraints so this entire branch can be pruned
-    */
+    vector_to_enumerate[index].second = value;
+    if (value == BOMB)
+        boardObj->updateSquare(c.x, c.y, FLAGGED);
+    else
+        boardObj->updateSquare(c.x, c.y, COVERED);
+    
+    if (check_constraints(c)) {
+        if (index == vector_to_enumerate.size() - 1) {
+            all_possible_mappings.push_back(vector_to_enumerate);
+        } else {
+            process_recursive_mappings(vector_to_enumerate, index+1, BOMB);
+            process_recursive_mappings(vector_to_enumerate, index+1, SAFE);
+        }
+    }
+    vector_to_enumerate[index].second = NONE;
+    boardObj->updateSquare(c.x, c.y, UNDEFINED);
+}
+
+bool MyAI::check_constraints(Coord& c) {
+    vector<Coord> neighbors;
+    int flagged_neighbors;
+    int undefined_neighbors;
+    int square_num;
+    get_neighbors(c, NUMBERED, neighbors);
+    for (const auto& coord : neighbors) {
+        flagged_neighbors = count_neighbors(coord, FLAGGED);
+        undefined_neighbors = count_neighbors(coord, UNDEFINED);
+        square_num =  boardObj->getSquare(coord.x, coord.y);
+        if (square_num > flagged_neighbors + undefined_neighbors ||
+            flagged_neighbors > square_num || 
+            (!undefined_neighbors && flagged_neighbors != square_num)
+            )
+            return false;
+    }
+    return true;
 }
 
 void MyAI::add_consistent_mappings() {
-    map<Coord, gameTile> cmap;
+    vector<pair<Coord, gameTile>> cmap;
 
     // populate cmap
-    // if(all_possible_mappings.size() == 0) {
-    //     return;
-    // } else if (all_possible_mappings.size() == 1){
-    //     for (const auto& pair : all_possible_mappings[0])
-    //         cmap.emplace(pair.first, pair.second);
-    // } else {
-    //     const std::map<Coord, gameTile>& first_map = all_possible_mappings[0];
-    //     for (const auto& pair : first_map) {
-    //         const Coord& c = pair.first;
-    //         const gameTile& tile = pair.second;
-    //         bool all_equal = true;
-    //         for (const auto& mapping : all_possible_mappings) {
-    //             if (mapping.at(c) != tile) {
-    //                 all_equal = false;
-    //                 break;
-    //             }
-    //         }
-    //         if (all_equal) {
-    //             cmap[c] = tile;
-    //         }
-    //     }
-    // }
+    if(all_possible_mappings.size() == 0) {
+        return;
+    } else if (all_possible_mappings.size() == 1){
+        cmap = all_possible_mappings[0];
+    } else {
+        const vector<pair<Coord, gameTile>>& first_map = all_possible_mappings[0];
+        for(int i; i < first_map.size(); ++i)
+        {
+            bool all_equal = true;
+            for(int j; j < all_possible_mappings.size(); ++j) {
+                if (first_map[i].second != all_possible_mappings[j][i].second) {
+                    all_equal = false;
+                    break;
+                }
+            }
+            if (all_equal) {
+                cmap.push_back(first_map[i]);
+            }
+        }
+    }
 
-    // // for consistent coords take action
-    // for (auto& pair : cmap) {
-    //     if(pair.second == BOMB){
-    //         boardObj->updateSquare(pair.first.x, pair.first.y, FLAGGED);
-    //         add_neighbors(pair.first, COVERED, toProcessVector);
-    //     } else if (pair.second == SAFE){
-    //         toUncoverVector.push_back(Coord{pair.first.x, pair.first.y});
-    //     }
-    // }
-
-    // all_possible_mappings.clear();
+    // for consistent coords take following action
+    for (auto& pair : cmap) {
+        if(pair.second == BOMB){
+            boardObj->updateSquare(pair.first.x, pair.first.y, FLAGGED);
+            add_neighbors(pair.first, NUMBERED, toProcessVector);
+        } else if (pair.second == SAFE){
+            toUncoverVector.push_back(Coord{pair.first.x, pair.first.y});
+        }
+    }
+    all_possible_mappings.clear();
 }
 
 void MyAI::process_uncovered_coord(Coord& coord, int number) {
@@ -220,11 +243,7 @@ void MyAI::process_uncovered_coord(Coord& coord, int number) {
         add_neighbors(coord, COVERED, toUncoverVector);
 
     } else {
-        // if (toProcessSet.find(coord) != toProcessSet.end())
-        // {
-            toProcessVector.push_back(coord);
-            // toProcessSet.insert(coord);
-        // }
+        toProcessVector.push_back(coord);
         add_neighbors(coord, NUMBERED, toProcessVector);
     }
 }
@@ -260,7 +279,7 @@ void MyAI::add_neighbors(const Coord& coord, Square type, vector<Coord>& list)
     }
 }
 
-int MyAI::count_neighbors(Coord& coord, Square type) 
+int MyAI::count_neighbors(const Coord& coord, Square type) 
 {
     int sum = 0;
     for(int i = coord.x-1; i <= coord.x+1; ++i) {
@@ -292,4 +311,20 @@ vector<Coord> MyAI::update_neighbors(Coord& coord, Square oldtype, Square newtyp
         }
     }
     return updated;
+}
+
+void MyAI::get_neighbors(Coord& coord, Square type, vector<Coord>& vector)
+{
+    for(int i = coord.x-1; i <= coord.x+1; ++i) {
+        for(int j = coord.y-1; j <= coord.y+1; ++j) {
+            if ((i != coord.x || j != coord.y) &&
+                boardObj->getSquare(i, j) != INVALID &&
+                ((boardObj->getSquare(i, j) == type) ||
+                (type == NUMBERED && (boardObj->getSquare(i, j) >= 0)))
+                )
+            {
+                vector.push_back(Coord(i, j));
+            }
+        }
+    }
 }

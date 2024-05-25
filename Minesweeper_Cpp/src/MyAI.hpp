@@ -33,6 +33,7 @@
 #define FLAGGED -2
 #define NUMBERED -3
 #define INVALID -4
+#define UNDEFINED -5
 typedef int Square;
 
 using namespace std;
@@ -42,6 +43,7 @@ struct Coord {
     int y;
     Coord(int xCoord, int yCoord) : x(xCoord), y(yCoord) {}
     string toString() const;
+    bool operator<(const Coord& other) const;
 };
 
 // BoardRepresentation Class
@@ -81,7 +83,7 @@ public:
 
     void process_uncovered_coord(Coord& coord, int number);
     void add_neighbors(const Coord& coord, Square type, vector<Coord>& list);
-    int count_neighbors(Coord& coord, Square type);
+    int count_neighbors(const Coord& coord, Square type);
     vector<Coord> update_neighbors(Coord& coord, Square oldtype, Square newtype);
 
     void singlePointProcess(Coord& nextCoord);
@@ -89,15 +91,16 @@ public:
     void enumerateFrontierStrategy();
     void process_recursive_mappings(vector<pair<Coord, gameTile>>& coord_mapping, int index, gameTile value);
     void add_consistent_mappings();
+    bool check_constraints(Coord& c);
+    void get_neighbors(Coord& coord, Square type, vector<Coord>& vector);
 
-    vector<map<Coord, gameTile>> all_possible_mappings;
+    vector<vector<pair<Coord, gameTile>>> all_possible_mappings;
     list<Coord> frontier_covered_coords;
     
     vector<Coord> toUncoverVector;
-    // unordered_set<Coord> toProcessSet;
     vector<Coord> toProcessVector;
     
-    bool justPerfromedEnumeration = false;
+    bool justPerformedEnumeration = false;
     BoardRep* boardObj;
     Coord agentCoord = Coord(0,0);
     
