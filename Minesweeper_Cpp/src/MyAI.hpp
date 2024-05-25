@@ -109,7 +109,6 @@ public:
     void get_neighbors(Coord& coord, Square type, vector<Coord>& vector);
 
     vector<vector<pair<Coord, gameTile>>> all_possible_mappings;
-    list<Coord> frontier_covered_coords;
     
     vector<Coord> toUncoverVector;
     vector<Coord> toProcessVector;

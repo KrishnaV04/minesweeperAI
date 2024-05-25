@@ -201,13 +201,18 @@ Agent::Action MyAI::getAction(int number)
     }    
 
     //5: Best Probability Strategy
+    if (boardObj->frontier_covered.size()) {
+        Coord c = *boardObj->frontier_covered.begin();
+        agentCoord = c;
+        return {UNCOVER, c.x, c.y};
+    }
     return {LEAVE, -1, -1}; // temporarily as not implemented best prob strategy
 }
 
 void MyAI::enumerateFrontierStrategy() {
     vector<pair<Coord, gameTile>> covered_frontier_enumerate;
 
-    
+
 
     for(const auto& p : covered_frontier_enumerate)
         boardObj->updateSquare(p.first.x, p.first.y, UNDEFINED);
