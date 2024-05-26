@@ -205,17 +205,16 @@ Agent::Action MyAI::getAction(int number)
                 enumerateFrontierStrategy();
             }
             // TODO frontier covered shouldn't have flagged mines
-            //printCoordSet(boardObj->frontier_covered);
             justPerformedEnumeration = true;
         }
     }
 
     //5: Best Probability Strategy
-    // if (boardObj->frontier_covered.size()) {
-    //     Coord c = *boardObj->frontier_covered.begin();
-    //     agentCoord = c;
-    //     return {UNCOVER, c.x, c.y};
-    // }
+    if (boardObj->frontier_covered.size()) {
+        Coord c = *boardObj->frontier_covered.begin();
+        agentCoord = c;
+        return {UNCOVER, c.x, c.y};
+    }
 
     // TODO STRATEGIES
     // - smart probability with frontier
