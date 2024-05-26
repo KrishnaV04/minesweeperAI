@@ -201,13 +201,14 @@ Agent::Action MyAI::getAction(int number)
         //4: Enumerate Frontier Checking Strategy 
         else if (!justPerformedEnumeration)
         {
-            
-            enumerateFrontierStrategy();
+            if(boardObj->frontier_covered.size()) {
+                enumerateFrontierStrategy();
+            }
             // TODO frontier covered shouldn't have flagged mines
             //printCoordSet(boardObj->frontier_covered);
             justPerformedEnumeration = true;
         }
-    }    
+    }
 
     //5: Best Probability Strategy
     // if (boardObj->frontier_covered.size()) {
@@ -215,25 +216,33 @@ Agent::Action MyAI::getAction(int number)
     //     agentCoord = c;
     //     return {UNCOVER, c.x, c.y};
     // }
+
+    // TODO STRATEGIES
+    // - smart probability with frontier
+    // - random with covered
+    // - time strategy, look at documentation
+
+    // TODO OPTIMIZATIONS
+    // - ghost bug
+    // - optimizations on covered_frontier !
+    // - optimizations in enumeration !
+    // - minimal optimizations
+
     return {LEAVE, -1, -1}; // temporarily as not implemented best prob strategy
 }
 
 void MyAI::enumerateFrontierStrategy() {
     vector<pair<Coord, gameTile>> covered_frontier_enumerate;
-
     for (const auto& coord : boardObj->frontier_covered) {
         covered_frontier_enumerate.emplace_back(coord, NONE);
     }
-
     for(const auto& p : covered_frontier_enumerate)
         boardObj->updateSquare(p.first.x, p.first.y, UNDEFINED);
     process_recursive_mappings(covered_frontier_enumerate, 0, BOMB);
     process_recursive_mappings(covered_frontier_enumerate, 0, SAFE);
     for(const auto& p : covered_frontier_enumerate)
         boardObj->updateSquare(p.first.x, p.first.y, COVERED);
-    
     add_consistent_mappings();
-    
 }
 
 void MyAI::process_recursive_mappings(vector<pair<Coord, gameTile>>& vector_to_enumerate, int index, gameTile value) {
@@ -281,31 +290,8 @@ void MyAI::add_consistent_mappings() {
 
     // TODO weird but all_possible_mappings gets deleted after priting, else it doesn't
     // TODO combining consistent mappings doesn't seem to work
-    // Good news no segfaults and algorithm works as designed
-    // cout << "Size before: " << all_possible_mappings.size() << endl;
-    
-    // for (const auto& vec : all_possible_mappings) {
-    //     for (const auto& pair : vec) {
-    //         std::cout << "Coord: (" << pair.first.x+1 << ", " << pair.first.y+1 << ") - ";
-    //         switch (pair.second) {
-    //             case NONE:
-    //                 std::cout << "NONE";
-    //                 break;
-    //             case BOMB:
-    //                 std::cout << "BOMB";
-    //                 break;
-    //             case SAFE:
-    //                 std::cout << "SAFE";
-    //                 break;
-    //         }
-    //        std::cout << std::endl;
-    //     }
-    //     std::cout << "---------------------" << std::endl;
-    // }
 
-    // //cout << "Size after: " << all_possible_mappings.size() << endl;
-
-    // populate cmap
+    // populate cmap    
     if(all_possible_mappings.size() == 0) {
         return;
     } else if (all_possible_mappings.size() == 1){
@@ -314,12 +300,9 @@ void MyAI::add_consistent_mappings() {
         const vector<pair<Coord, gameTile>>& first_map = all_possible_mappings[0];
         for(int i=0; i < first_map.size(); ++i)
         {
-            // cout << "Element of first map: (" << first_map[i].first.x+1 << ", " << first_map[i].first.y+1 << ")," << first_map[i].second <<  " - > ";
             bool all_equal = true;
             for(int j=1; j < all_possible_mappings.size(); ++j) {
-                // cout << j << "-(" << all_possible_mappings[j][i].first.x+1 << ", " << all_possible_mappings[j][i].first.y+1 << ")," << all_possible_mappings[j][i].second;
                 if (first_map[i].second != all_possible_mappings[j][i].second) {
-                    // cout << " detected difference";
                     all_equal = false;
                     break;
                 }
@@ -327,27 +310,14 @@ void MyAI::add_consistent_mappings() {
             if (all_equal) {
                 cmap.push_back(first_map[i]);
             }
-            // cout << "\n";
         }
     }
 
     // for consistent coords take following action
     for (auto& pair : cmap) {
-        // std::cout << "Coord: (" << pair.first.x+1 << ", " << pair.first.y+1 << ") - ";
-        // switch (pair.second) {
-        //     case NONE:
-        //         std::cout << "NONE";
-        //         break;
-        //     case BOMB:
-        //         std::cout << "BOMB";
-        //         break;
-        //     case SAFE:
-        //         std::cout << "SAFE";
-        //         break;
-        // }
-        // std::cout << std::endl;
     if(pair.second == BOMB){
             boardObj->updateSquare(pair.first.x, pair.first.y, FLAGGED);
+            boardObj->frontier_covered.erase(pair.first);
             add_neighbors(pair.first, NUMBERED, toProcessVector);
         } else if (pair.second == SAFE){
             toUncoverVector.push_back(Coord{pair.first.x, pair.first.y});
@@ -362,21 +332,23 @@ void MyAI::process_uncovered_coord(Coord& coord, int number) {
 
     // Changes 5/18: Updating the covered and uncovered frontiers
     boardObj->frontier_covered.erase(coord); // 1. Remove the uncovered coord from the covered frontier, if it exists
-    list<Coord> opposite_neighbors = boardObj->listOppositeNeighbors(coord); // 2. Find the covered neighbors of coord
+    vector<Coord> opposite_neighbors;
+    get_neighbors(coord, COVERED, opposite_neighbors);
+    //list<Coord> opposite_neighbors = boardObj->listOppositeNeighbors(coord); // 2. Find the covered neighbors of coord
     list<Coord> matching_neighbors = boardObj->listMatchingNeighbors(coord); // 2.5 Find the uncovered neighbors of coord
     list<Coord> coord2;
     if (opposite_neighbors.size()) { // 3. If the uncovered coord has covered neighbors, then it now belongs in the uncovered frontier
-        boardObj->frontier_uncovered.insert(coord);
+        // boardObj->frontier_uncovered.insert(coord);
         for (Coord covered_adj: opposite_neighbors) { // 4. Enter all the covered neighbors into the covered frontier
             boardObj->frontier_covered.insert(covered_adj);
         }
     }
-    for (Coord uncovered_adj : matching_neighbors) { // 5. Remove any uncovered neighbors of coord if they leave the uncovered frontier
-        coord2 = boardObj->listOppositeNeighbors(uncovered_adj);
-        if (!coord2.size()) {
-            boardObj->frontier_uncovered.erase(uncovered_adj);
-        }
-    }
+    // for (Coord uncovered_adj : matching_neighbors) { // 5. Remove any uncovered neighbors of coord if they leave the uncovered frontier
+    //     coord2 = boardObj->listOppositeNeighbors(uncovered_adj);
+    //     if (!coord2.size()) {
+    //         boardObj->frontier_uncovered.erase(uncovered_adj);
+    //     }
+    // }
     //printCoordSet(boardObj->frontier_uncovered); // Debug lines that show the frontiers after the prior iteration
     //printCoordSet(boardObj->frontier_covered);
     // end of changes 5/18
@@ -402,6 +374,7 @@ void MyAI::singlePointProcess(Coord& nextCoord) {
         vector<Coord> updated_coords = update_neighbors(nextCoord, COVERED, FLAGGED);
         for (Coord& c : updated_coords) {
             add_neighbors(c, NUMBERED, toProcessVector);
+            boardObj->frontier_covered.erase(c);
         }
     }
 }
