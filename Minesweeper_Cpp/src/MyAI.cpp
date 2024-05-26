@@ -23,8 +23,16 @@ string Coord::toString() const {
         return "(" + std::to_string(x+1) + ", " + std::to_string(y+1) + ")";
 }
 
+int interleave_bits(int x, int y) {
+    int z = 0;
+    for (int i = 0; i < sizeof(int) * 4; ++i) {
+        z |= (x & (1 << i)) << i | (y & (1 << i)) << (i + 1);
+    }
+    return z;
+}
+
 bool Coord::operator<(const Coord& other) const {
-        return std::tie(x, y) < std::tie(other.x, other.y);
+        return interleave_bits(x, y) < interleave_bits(other.x, other.y);
 }
 
 // constructor for BoardRep
@@ -194,25 +202,28 @@ Agent::Action MyAI::getAction(int number)
         else if (!justPerformedEnumeration)
         {
             
-            //enumerateFrontierStrategy();
+            enumerateFrontierStrategy();
+            // TODO frontier covered shouldn't have flagged mines
             //printCoordSet(boardObj->frontier_covered);
             justPerformedEnumeration = true;
         }
     }    
 
     //5: Best Probability Strategy
-    if (boardObj->frontier_covered.size()) {
-        Coord c = *boardObj->frontier_covered.begin();
-        agentCoord = c;
-        return {UNCOVER, c.x, c.y};
-    }
+    // if (boardObj->frontier_covered.size()) {
+    //     Coord c = *boardObj->frontier_covered.begin();
+    //     agentCoord = c;
+    //     return {UNCOVER, c.x, c.y};
+    // }
     return {LEAVE, -1, -1}; // temporarily as not implemented best prob strategy
 }
 
 void MyAI::enumerateFrontierStrategy() {
     vector<pair<Coord, gameTile>> covered_frontier_enumerate;
 
-
+    for (const auto& coord : boardObj->frontier_covered) {
+        covered_frontier_enumerate.emplace_back(coord, NONE);
+    }
 
     for(const auto& p : covered_frontier_enumerate)
         boardObj->updateSquare(p.first.x, p.first.y, UNDEFINED);
@@ -220,6 +231,7 @@ void MyAI::enumerateFrontierStrategy() {
     process_recursive_mappings(covered_frontier_enumerate, 0, SAFE);
     for(const auto& p : covered_frontier_enumerate)
         boardObj->updateSquare(p.first.x, p.first.y, COVERED);
+    
     add_consistent_mappings();
     
 }
@@ -267,6 +279,32 @@ bool MyAI::check_constraints(Coord& c) {
 void MyAI::add_consistent_mappings() {
     vector<pair<Coord, gameTile>> cmap;
 
+    // TODO weird but all_possible_mappings gets deleted after priting, else it doesn't
+    // TODO combining consistent mappings doesn't seem to work
+    // Good news no segfaults and algorithm works as designed
+    // cout << "Size before: " << all_possible_mappings.size() << endl;
+    
+    // for (const auto& vec : all_possible_mappings) {
+    //     for (const auto& pair : vec) {
+    //         std::cout << "Coord: (" << pair.first.x+1 << ", " << pair.first.y+1 << ") - ";
+    //         switch (pair.second) {
+    //             case NONE:
+    //                 std::cout << "NONE";
+    //                 break;
+    //             case BOMB:
+    //                 std::cout << "BOMB";
+    //                 break;
+    //             case SAFE:
+    //                 std::cout << "SAFE";
+    //                 break;
+    //         }
+    //        std::cout << std::endl;
+    //     }
+    //     std::cout << "---------------------" << std::endl;
+    // }
+
+    // //cout << "Size after: " << all_possible_mappings.size() << endl;
+
     // populate cmap
     if(all_possible_mappings.size() == 0) {
         return;
@@ -274,11 +312,14 @@ void MyAI::add_consistent_mappings() {
         cmap = all_possible_mappings[0];
     } else {
         const vector<pair<Coord, gameTile>>& first_map = all_possible_mappings[0];
-        for(int i; i < first_map.size(); ++i)
+        for(int i=0; i < first_map.size(); ++i)
         {
+            // cout << "Element of first map: (" << first_map[i].first.x+1 << ", " << first_map[i].first.y+1 << ")," << first_map[i].second <<  " - > ";
             bool all_equal = true;
-            for(int j; j < all_possible_mappings.size(); ++j) {
+            for(int j=1; j < all_possible_mappings.size(); ++j) {
+                // cout << j << "-(" << all_possible_mappings[j][i].first.x+1 << ", " << all_possible_mappings[j][i].first.y+1 << ")," << all_possible_mappings[j][i].second;
                 if (first_map[i].second != all_possible_mappings[j][i].second) {
+                    // cout << " detected difference";
                     all_equal = false;
                     break;
                 }
@@ -286,18 +327,33 @@ void MyAI::add_consistent_mappings() {
             if (all_equal) {
                 cmap.push_back(first_map[i]);
             }
+            // cout << "\n";
         }
     }
 
     // for consistent coords take following action
     for (auto& pair : cmap) {
-        if(pair.second == BOMB){
+        // std::cout << "Coord: (" << pair.first.x+1 << ", " << pair.first.y+1 << ") - ";
+        // switch (pair.second) {
+        //     case NONE:
+        //         std::cout << "NONE";
+        //         break;
+        //     case BOMB:
+        //         std::cout << "BOMB";
+        //         break;
+        //     case SAFE:
+        //         std::cout << "SAFE";
+        //         break;
+        // }
+        // std::cout << std::endl;
+    if(pair.second == BOMB){
             boardObj->updateSquare(pair.first.x, pair.first.y, FLAGGED);
             add_neighbors(pair.first, NUMBERED, toProcessVector);
         } else if (pair.second == SAFE){
             toUncoverVector.push_back(Coord{pair.first.x, pair.first.y});
         }
     }
+
     all_possible_mappings.clear();
 }
 
