@@ -125,7 +125,7 @@ bool BoardRep::updateSquare(int col, int row, Square value)
     // checks to make sure board had a covered square and then is getting uncovered
     else if (board[row][col] == COVERED && value >= 0) {
         covered_sq_count -= 1;
-        all_covered.erase(Coord(row, col));
+        all_covered.erase(Coord(col, row)); 
     }
     board[row][col] = value;
     return true;
@@ -323,7 +323,7 @@ void MyAI::add_consistent_mappings() {
     for (auto& pair : cmap) {
     if(pair.second == BOMB){
             boardObj->updateSquare(pair.first.x, pair.first.y, FLAGGED);
-            boardObj->all_covered.erase(Coord(pair.first.x, pair.first.y));
+            boardObj->all_covered.erase(pair.first);
             boardObj->frontier_covered.erase(pair.first);
             add_neighbors(pair.first, NUMBERED, toProcessVector);
         } else if (pair.second == SAFE){
@@ -350,15 +350,6 @@ void MyAI::process_uncovered_coord(Coord& coord, int number) {
             boardObj->frontier_covered.insert(covered_adj);
         }
     }
-    // for (Coord uncovered_adj : matching_neighbors) { // 5. Remove any uncovered neighbors of coord if they leave the uncovered frontier
-    //     coord2 = boardObj->listOppositeNeighbors(uncovered_adj);
-    //     if (!coord2.size()) {
-    //         boardObj->frontier_uncovered.erase(uncovered_adj);
-    //     }
-    // }
-    //printCoordSet(boardObj->frontier_uncovered); // Debug lines that show the frontiers after the prior iteration
-    //printCoordSet(boardObj->frontier_covered);
-    // end of changes 5/18
     
     if (number == 0) {
         add_neighbors(coord, COVERED, toUncoverVector);
