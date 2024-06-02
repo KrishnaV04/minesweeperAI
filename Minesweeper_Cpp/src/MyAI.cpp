@@ -323,6 +323,7 @@ void MyAI::add_consistent_mappings() {
     for (auto& pair : cmap) {
     if(pair.second == BOMB){
             boardObj->updateSquare(pair.first.x, pair.first.y, FLAGGED);
+            boardObj->all_covered.erase(Coord(pair.first.x, pair.first.y));
             boardObj->frontier_covered.erase(pair.first);
             add_neighbors(pair.first, NUMBERED, toProcessVector);
         } else if (pair.second == SAFE){
@@ -381,6 +382,7 @@ void MyAI::singlePointProcess(Coord& nextCoord) {
         for (Coord& c : updated_coords) {
             add_neighbors(c, NUMBERED, toProcessVector);
             boardObj->frontier_covered.erase(c);
+            boardObj->all_covered.erase(c);
         }
     }
 }
