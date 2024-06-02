@@ -226,7 +226,6 @@ Agent::Action MyAI::getAction(int number)
 
     // TODO STRATEGIES
     // - smart probability with frontier
-    // - random with covered
     // - time strategy, look at documentation
 
     // TODO OPTIMIZATIONS
