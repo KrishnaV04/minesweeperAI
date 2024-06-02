@@ -44,6 +44,7 @@ BoardRep::BoardRep(int _rowDimension, int _colDimension, int _totalMines)
         board[i] = new Square[colSize];
         for (int j = 0; j < colSize; ++j) {
             board[i][j] = COVERED;
+            all_covered.emplace(i, j);
         }
     }
     covered_sq_count = rowSize * colSize;
@@ -124,6 +125,7 @@ bool BoardRep::updateSquare(int col, int row, Square value)
     // checks to make sure board had a covered square and then is getting uncovered
     else if (board[row][col] == COVERED && value >= 0) {
         covered_sq_count -= 1;
+        all_covered.erase(Coord(row, col));
     }
     board[row][col] = value;
     return true;
@@ -212,6 +214,12 @@ Agent::Action MyAI::getAction(int number)
     //5: Best Probability Strategy
     if (boardObj->frontier_covered.size()) {
         Coord c = *boardObj->frontier_covered.begin();
+        agentCoord = c;
+        return {UNCOVER, c.x, c.y};
+    }
+
+    if (boardObj->all_covered.size()) {
+        Coord c = *boardObj->all_covered.begin();
         agentCoord = c;
         return {UNCOVER, c.x, c.y};
     }

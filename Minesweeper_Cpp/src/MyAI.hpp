@@ -60,11 +60,11 @@ public:
     const int totalMines;
     int covered_sq_count;
     Square** board;
-    list<Coord> all_covered_coords;
 
     // Merge 5/24
     set<Coord> frontier_covered;
     set<Coord> frontier_uncovered;
+    set<Coord> all_covered;
 
     // functions in BoardRep
     BoardRep(int _rowDimension, int _colDimension, int _totalMines);
