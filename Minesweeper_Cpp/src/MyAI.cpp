@@ -249,6 +249,12 @@ void MyAI::enumerateFrontierStrategy() {
     for(const auto& p : covered_frontier_enumerate)
         boardObj->updateSquare(p.first.x, p.first.y, COVERED);
     add_consistent_mappings();
+
+    // the stat enumeration backup step:
+    if (toUncoverVector.empty() && lowest_risk_is_current) {
+        toUncoverVector.push_back(total_lowest_risk_coord);
+    }
+    lowest_risk_is_current = false;
 }
 
 void MyAI::process_recursive_mappings(vector<pair<Coord, gameTile>>& vector_to_enumerate, int index, gameTile value) {
@@ -297,6 +303,11 @@ void MyAI::add_consistent_mappings() {
     // TODO weird but all_possible_mappings gets deleted after priting, else it doesn't
     // TODO combining consistent mappings doesn't seem to work
 
+    // Statistical enumeration flags:
+    bool found_safe_move = false;
+    Coord lowest_risk_coord{-533, -302};
+    int lowest_risk = 99999;
+
     // populate cmap    
     if(all_possible_mappings.size() == 0) {
         return;
@@ -307,15 +318,30 @@ void MyAI::add_consistent_mappings() {
         for(int i=0; i < first_map.size(); ++i)
         {
             bool all_equal = true;
+            int this_risk = (first_map[i].second == BOMB ? 1 : 0); // This risk starts at 1 if the first enumeration is a bomb
             for(int j=1; j < all_possible_mappings.size(); ++j) {
                 if (first_map[i].second != all_possible_mappings[j][i].second) {
                     all_equal = false;
-                    break;
+                    // Added condition to not break if no safe move has been found yet or if this move
+                    // might be safer than the current safest (therefore, we still need to count ALL of the ways this one could be a bomb)
+                    if (found_safe_move || (this_risk >= lowest_risk)) {
+                        break;
+                    }
+                    if (all_possible_mappings[j][i].second == BOMB) ++this_risk; //
                 }
             }
             if (all_equal) {
                 cmap.push_back(first_map[i]);
+                // Added to skip further stat enumeration computation upon finding a safe move:
+                if (!this_risk) {
+                    found_safe_move = true;
+                }
             }
+            if (found_safe_move) break;
+            if (this_risk < lowest_risk) { // Remembers this coord if it has the lowest risk so far
+               lowest_risk = this_risk;
+               lowest_risk_coord = first_map[i].first;
+            } //
         }
     }
 
@@ -329,6 +355,12 @@ void MyAI::add_consistent_mappings() {
         } else if (pair.second == SAFE){
             toUncoverVector.push_back(Coord{pair.first.x, pair.first.y});
         }
+    }
+
+    if (toUncoverVector.empty() && (!lowest_risk_is_current || lowest_risk < total_lowest_risk)) {
+        lowest_risk_is_current = true;
+        total_lowest_risk = lowest_risk;
+        total_lowest_risk_coord = lowest_risk_coord;
     }
 
     all_possible_mappings.clear();

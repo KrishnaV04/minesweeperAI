@@ -117,7 +117,10 @@ public:
     BoardRep* boardObj;
     Coord agentCoord = Coord(0,0);
     
-
+    // Added as part of stat enumeration
+    bool lowest_risk_is_current = false;
+    Coord total_lowest_risk_coord = Coord(0, 0);
+    int total_lowest_risk = 0;
 
 };
 
