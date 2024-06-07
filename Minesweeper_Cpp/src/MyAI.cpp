@@ -149,9 +149,16 @@ bool BoardRep::isDone()
 // Start of myAI class, which contains core functionality
 MyAI::MyAI (int _rowDimension, int _colDimension, int _totalMines, int _agentX, int _agentY) : Agent()
 {
+    start_time = std::chrono::steady_clock::now();
     boardObj = new BoardRep(_rowDimension, _colDimension, _totalMines);
     agentCoord = Coord(_agentX, _agentY);
 };
+
+int MyAI::secondsLeft() {
+    auto current_time = std::chrono::steady_clock::now();
+    auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+    return 180 - elapsed_time;
+}
 
 MyAI::~MyAI() {
     delete boardObj;
@@ -187,6 +194,7 @@ Agent::Action MyAI::getAction(int number)
                 agentCoord = nextCoord;
                 return {UNCOVER, agentCoord.x, agentCoord.y};
             }
+            //std::cout << "rejected " << nextCoord.x << " " << nextCoord.y << "!: " << boardObj->getSquare(nextCoord.x, nextCoord.y) << std::endl;
             justPerformedEnumeration = false; // needed for #4
         }
 
@@ -204,7 +212,26 @@ Agent::Action MyAI::getAction(int number)
         else if (!justPerformedEnumeration)
         {
             if(boardObj->frontier_covered.size()) {
-                enumerateFrontierStrategy();
+                int time = secondsLeft();
+                if (time < 2) {
+                    justPerformedEnumeration = true;
+                    continue;
+                }
+                else if (time < 60 + (max_time_taken * 1.5)) {
+                    std::cout << "Making a fast calculation instead for f = " << boardObj->frontier_covered.size() << std::endl;
+                    enumerateFrontierStrategy_Sloppy();
+                    //std::cout << boardObj->covered_sq_count << " Done, with " << toUncoverVector.back().x << " " << toUncoverVector.back().y << std::endl;
+                }
+                else {
+                    //std::cout << "Starting enumeration for f = " << boardObj->frontier_covered.size() << std::endl;
+                    enumerateFrontierStrategy();
+                    //std::cout << "Done! " << std::endl;
+                    int used = time - secondsLeft();
+                    if (used > max_time_taken) {
+                        max_time_taken = used;
+                        //std::cout << "max_time_taken is now " << max_time_taken << std::endl;
+                    }
+                }
             }
             // TODO frontier covered shouldn't have flagged mines
             justPerformedEnumeration = true;
@@ -244,11 +271,45 @@ void MyAI::enumerateFrontierStrategy() {
     }
     for(const auto& p : covered_frontier_enumerate)
         boardObj->updateSquare(p.first.x, p.first.y, UNDEFINED);
+
     process_recursive_mappings(covered_frontier_enumerate, 0, BOMB);
     process_recursive_mappings(covered_frontier_enumerate, 0, SAFE);
     for(const auto& p : covered_frontier_enumerate)
         boardObj->updateSquare(p.first.x, p.first.y, COVERED);
     add_consistent_mappings();
+
+    // the stat enumeration backup step:
+    if (toUncoverVector.empty() && lowest_risk_is_current) {
+        toUncoverVector.push_back(total_lowest_risk_coord);
+    }
+    lowest_risk_is_current = false;
+}
+
+void MyAI::enumerateFrontierStrategy_Sloppy() {
+    int MAX_FACTORS = 39;
+    vector<pair<Coord, gameTile>> covered_frontier_enumerate;
+    int i = 0;
+    for (const auto& coord : boardObj->frontier_covered) {
+        covered_frontier_enumerate.emplace_back(coord, NONE);
+        ++i;
+        if (i > MAX_FACTORS) {
+            break;
+        }
+    }
+    for(const auto& p : covered_frontier_enumerate)
+        boardObj->updateSquare(p.first.x, p.first.y, UNDEFINED);
+    
+    process_recursive_mappings(covered_frontier_enumerate, 0, BOMB);
+    process_recursive_mappings(covered_frontier_enumerate, 0, SAFE);
+    for(const auto& p : covered_frontier_enumerate)
+        boardObj->updateSquare(p.first.x, p.first.y, COVERED);
+
+    if (i > MAX_FACTORS) {
+        add_ONE_consistent_mapping();
+    }
+    else {
+        add_consistent_mappings();
+    }
 
     // the stat enumeration backup step:
     if (toUncoverVector.empty() && lowest_risk_is_current) {
@@ -308,6 +369,8 @@ void MyAI::add_consistent_mappings() {
     Coord lowest_risk_coord{-533, -302};
     int lowest_risk = 99999;
 
+    //std::cout << "Beginning processing mappings with m = " << all_possible_mappings.size() << std::endl;
+
     // populate cmap    
     if(all_possible_mappings.size() == 0) {
         return;
@@ -362,6 +425,83 @@ void MyAI::add_consistent_mappings() {
         total_lowest_risk = lowest_risk;
         total_lowest_risk_coord = lowest_risk_coord;
     }
+
+    //std::cout << "Done!" << std::endl;
+
+    all_possible_mappings.clear();
+}
+
+void MyAI::add_ONE_consistent_mapping() {
+    vector<pair<Coord, gameTile>> cmap;
+
+    // TODO weird but all_possible_mappings gets deleted after priting, else it doesn't
+    // TODO combining consistent mappings doesn't seem to work
+
+    // Statistical enumeration flags:
+    bool found_safe_move = false;
+    Coord lowest_risk_coord{-533, -302};
+    int lowest_risk = 99999;
+
+    //std::cout << "Beginning processing mappings with m = " << all_possible_mappings.size() << std::endl;
+
+    // populate cmap    
+    if(all_possible_mappings.size() == 0) {
+        return;
+    } else if (all_possible_mappings.size() == 1){
+        cmap = all_possible_mappings[0];
+    } else {
+        const vector<pair<Coord, gameTile>>& first_map = all_possible_mappings[0];
+        for(int i=0; i < first_map.size(); ++i)
+        {
+            bool all_equal = true;
+            int this_risk = (first_map[i].second == BOMB ? 1 : 0); // This risk starts at 1 if the first enumeration is a bomb
+            for(int j=1; j < all_possible_mappings.size(); ++j) {
+                if (first_map[i].second != all_possible_mappings[j][i].second) {
+                    all_equal = false;
+                    // Added condition to not break if no safe move has been found yet or if this move
+                    // might be safer than the current safest (therefore, we still need to count ALL of the ways this one could be a bomb)
+                    if (found_safe_move || (this_risk >= lowest_risk)) {
+                        break;
+                    }
+                    if (all_possible_mappings[j][i].second == BOMB) ++this_risk; //
+                }
+            }
+            if (all_equal) {
+                cmap.push_back(first_map[i]);
+                // Added to skip further stat enumeration computation upon finding a safe move:
+                if (!this_risk) {
+                    found_safe_move = true;
+                }
+            }
+            if (found_safe_move) break;
+            if (this_risk < lowest_risk) { // Remembers this coord if it has the lowest risk so far
+               lowest_risk = this_risk;
+               lowest_risk_coord = first_map[i].first;
+            } //
+        }
+    }
+
+    // for consistent coords take following action
+    for (auto& pair : cmap) {
+    if(pair.second == BOMB){
+            boardObj->updateSquare(pair.first.x, pair.first.y, FLAGGED);
+            boardObj->all_covered.erase(pair.first);
+            boardObj->frontier_covered.erase(pair.first);
+            add_neighbors(pair.first, NUMBERED, toProcessVector);
+        } else if (pair.second == SAFE){
+            toUncoverVector.push_back(Coord{pair.first.x, pair.first.y});
+            all_possible_mappings.clear();
+            return;
+        }
+    }
+
+    if (toUncoverVector.empty() && (!lowest_risk_is_current || lowest_risk < total_lowest_risk)) {
+        lowest_risk_is_current = true;
+        total_lowest_risk = lowest_risk;
+        total_lowest_risk_coord = lowest_risk_coord;
+    }
+
+    //std::cout << "Done!" << std::endl;
 
     all_possible_mappings.clear();
 }

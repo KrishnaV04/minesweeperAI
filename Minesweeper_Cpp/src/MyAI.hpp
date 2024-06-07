@@ -28,6 +28,7 @@
 #include <set>
 #include <algorithm>
 #include <unordered_set>
+#include <chrono>
 
 #define COVERED -1
 #define FLAGGED -2
@@ -107,6 +108,14 @@ public:
     void add_consistent_mappings();
     bool check_constraints(Coord& c);
     void get_neighbors(Coord& coord, Square type, vector<Coord>& vector);
+
+    void enumerateFrontierStrategy_Sloppy();
+    void add_ONE_consistent_mapping();
+    int secondsLeft();
+
+    // Added 6/7
+    std::chrono::steady_clock::time_point start_time;
+    int max_time_taken = 0;
 
     vector<vector<pair<Coord, gameTile>>> all_possible_mappings;
     
