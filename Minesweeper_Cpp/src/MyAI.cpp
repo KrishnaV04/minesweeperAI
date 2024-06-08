@@ -194,7 +194,6 @@ Agent::Action MyAI::getAction(int number)
                 agentCoord = nextCoord;
                 return {UNCOVER, agentCoord.x, agentCoord.y};
             }
-            //std::cout << "rejected " << nextCoord.x << " " << nextCoord.y << "!: " << boardObj->getSquare(nextCoord.x, nextCoord.y) << std::endl;
             justPerformedEnumeration = false; // needed for #4
         }
 
@@ -213,23 +212,18 @@ Agent::Action MyAI::getAction(int number)
         {
             if(boardObj->frontier_covered.size()) {
                 int time = secondsLeft();
-                if (time < 2) {
+                if (time < 2 && boardObj->frontier_covered.size() > 30) {
                     justPerformedEnumeration = true;
                     continue;
                 }
                 else if (time < 60 + (max_time_taken * 1.5)) {
-                    std::cout << "Making a fast calculation instead for f = " << boardObj->frontier_covered.size() << std::endl;
                     enumerateFrontierStrategy_Sloppy();
-                    //std::cout << boardObj->covered_sq_count << " Done, with " << toUncoverVector.back().x << " " << toUncoverVector.back().y << std::endl;
                 }
                 else {
-                    //std::cout << "Starting enumeration for f = " << boardObj->frontier_covered.size() << std::endl;
                     enumerateFrontierStrategy();
-                    //std::cout << "Done! " << std::endl;
                     int used = time - secondsLeft();
                     if (used > max_time_taken) {
                         max_time_taken = used;
-                        //std::cout << "max_time_taken is now " << max_time_taken << std::endl;
                     }
                 }
             }
@@ -369,8 +363,6 @@ void MyAI::add_consistent_mappings() {
     Coord lowest_risk_coord{-533, -302};
     int lowest_risk = 99999;
 
-    //std::cout << "Beginning processing mappings with m = " << all_possible_mappings.size() << std::endl;
-
     // populate cmap    
     if(all_possible_mappings.size() == 0) {
         return;
@@ -426,8 +418,6 @@ void MyAI::add_consistent_mappings() {
         total_lowest_risk_coord = lowest_risk_coord;
     }
 
-    //std::cout << "Done!" << std::endl;
-
     all_possible_mappings.clear();
 }
 
@@ -441,8 +431,6 @@ void MyAI::add_ONE_consistent_mapping() {
     bool found_safe_move = false;
     Coord lowest_risk_coord{-533, -302};
     int lowest_risk = 99999;
-
-    //std::cout << "Beginning processing mappings with m = " << all_possible_mappings.size() << std::endl;
 
     // populate cmap    
     if(all_possible_mappings.size() == 0) {
@@ -500,8 +488,6 @@ void MyAI::add_ONE_consistent_mapping() {
         total_lowest_risk = lowest_risk;
         total_lowest_risk_coord = lowest_risk_coord;
     }
-
-    //std::cout << "Done!" << std::endl;
 
     all_possible_mappings.clear();
 }
